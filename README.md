@@ -43,7 +43,21 @@ End of `cook()` → no check → the attacker keeps the borrowed MIM.
 They repeated this sequence on `6 different cauldrons`, each executing a massive borrow.
 
     Stolen tokens: ≈ 1,793,755 MIM (~$1.79M)
+    
     Main attacker: 0x1AaaDe3e9062d124B7DeB0eD6DDC7055EFA7354d
     Vulnerable contract: 0xd96f48665a1410c0cd669a88898eca36b9fc2cce (Degenbox)
-    Logic contract: 0x5E70F7AcB8ec0231c00220d11c74dC2B23187103 (CauldronV4)
+    Cauldron 1 : 0x46f54d434063e5F1a2b2CC6d9AAa657b1B9ff82c (CauldronV4)
+    Cauldron 2 : 0x289424aDD4A1A503870EB475FD8bF1D586b134ED (CauldronV4)
+    Cauldron 3 : 0xce450a23378859fB5157F4C4cCCAf48faA30865B (CauldronV4)
+    Cauldron 4 : 0x40d95C4b34127CF43438a963e7C066156C5b87a3 (CauldronV4)
+    Cauldron 5 : 0x6bcd99D6009ac1666b58CB68fB4A50385945CDA2 (CauldronV4)
+    Cauldron 6 : 0xC6D3b82f9774Db8F92095b5e4352a8bB8B0dC20d (CauldronV4)
+    
     Tx: 0x842aae91c89a9e5043e64af34f53dc66daf0f033ad8afbf35ef0c93f99a9e5e6
+    https://app.blocksec.com/explorer/tx/eth/0x842aae91c89a9e5043e64af34f53dc66daf0f033ad8afbf35ef0c93f99a9e5e6
+
+    Post-Mortem Ressources
+    ----------
+    https://x.com/GoPlusSecurity/status/1974716994516877452
+    https://x.com/Phalcon_xyz/status/1974533451408986417
+    https://x.com/hklst4r/status/1974477630171734327
