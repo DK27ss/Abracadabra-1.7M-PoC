@@ -98,7 +98,6 @@ contract AbracadabraExploitTest is Test {
             // Check available MIM in this Cauldron
             uint256 cauldronShares = degenBox.balanceOf(address(MIM), address(cauldrons[i]));
             uint256 cauldronMIM = degenBox.toAmount(address(MIM), cauldronShares, false);
-
             console.log("  MIM available:", cauldronMIM / 1e18, "MIM");
 
             if (cauldronMIM < 1000 ether) {
@@ -140,7 +139,6 @@ contract AbracadabraExploitTest is Test {
             } catch {
                 console.log("  [FAILED] Unknown error");
             }
-
             console.log("");
         }
 
