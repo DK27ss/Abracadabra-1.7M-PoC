@@ -98,7 +98,7 @@ contract AbracadabraExploitTest is Test {
                 continue;
             }
 
-            uint256 borrowAmount = (cauldronMIM * 95) / 100;
+            uint256 borrowAmount = cauldronMIM > 100 ether ? cauldronMIM - 100 ether : cauldronMIM;
 
             console.log("  Borrowing:", borrowAmount / 1e18, "MIM");
             console.log("  Recipient:", recipients[i]);
