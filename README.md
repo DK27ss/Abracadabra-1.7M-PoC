@@ -16,9 +16,9 @@ Each action corresponds to an internal operation:
     5	ACTION_BORROW → MIM borrowing
     0	ACTION_CUSTOM / _additionalCookAction() → additional "custom" action
 
-ACTION_BORROW (5) sets `status.needsSolvencyCheck = true`, to force the solvency check at the end.
+`ACTION_BORROW` (5) sets `status.needsSolvencyCheck = true`, to force the solvency check at the end.
 
-But action 0 (ACTION_CUSTOM) calls `_additionalCookAction()`, an empty function that returns a new status structure where all fields are reset to false
+But `action 0` (ACTION_CUSTOM) calls `_additionalCookAction()`, an empty function that returns a new status structure where all fields are reset to `false`
 
     function _additionalCookAction(CookStatus memory, bytes memory) internal pure returns (CookStatus memory) {
         return CookStatus(false);
@@ -30,7 +30,7 @@ At the end of `cook()`, the contract checks:
 
     if (status.needsSolvencyCheck) _ensureSolvent(user);
 
-But since the flag was reset to false, no solvency check is performed — the user can therefore borrow without any collateral.
+But since the flag was reset to `false`, no solvency check is performed — the user can therefore borrow without any collateral.
 
 The attacker exploited this flaw by calling:
 
@@ -44,8 +44,8 @@ They repeated this sequence on `6 different cauldrons`, each executing a massive
 
     Stolen tokens: ≈ 1,793,755 MIM (~$1.79M)
     
-    Main attacker: 0x1AaaDe3e9062d124B7DeB0eD6DDC7055EFA7354d
-    Vulnerable contract: 0xd96f48665a1410c0cd669a88898eca36b9fc2cce (Degenbox)
+    Attacker : 0x1AaaDe3e9062d124B7DeB0eD6DDC7055EFA7354d (Attacker)
+    DegenBox : 0xd96f48665a1410c0cd669a88898eca36b9fc2cce (Degenbox)
     Cauldron 1 : 0x46f54d434063e5F1a2b2CC6d9AAa657b1B9ff82c (CauldronV4)
     Cauldron 2 : 0x289424aDD4A1A503870EB475FD8bF1D586b134ED (CauldronV4)
     Cauldron 3 : 0xce450a23378859fB5157F4C4cCCAf48faA30865B (CauldronV4)
