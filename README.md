@@ -5,10 +5,10 @@ Abracadabra, a DeFi lending protocol which also issues the decentralized Magic I
 
 In the attack, which occurred late Saturday night, an unknown threat actor leveraged a smart contract vulnerability to bypass solvency checks, allowing them to extract 1.79 million MIM from the protocol, according to security firm BlockSec Phalcon. The attack wallet's initial funding came from mixing protocol Tornado Cash; following the attack, the attacker swapped the tokens for ETH and sent it back to Tornado. 
 
-The exploit abused a flawed implementation of the cook() function in CauldronV4, where the combined call [5, 0] allowed resetting the needsSolvencyCheck flag and completely bypassing solvency checks, thus enabling the borrowing of ~1.79M MIM without collateral.
+The exploit abused a flawed implementation of the `cook()` function in `CauldronV4`, where the combined call `[5, 0]` allowed resetting the `needsSolvencyCheck` flag and completely bypassing solvency checks, thus enabling the borrowing of ~1.79M MIM without collateral.
 
-The Abracadabra Money protocol uses a "Cauldron" architecture (borrowing logic) called via a Degenbox proxy.
-Complex operations are orchestrated through the versatile cook() function, which executes a sequence of encoded actions (actions[], values[], datas[]) in a single call.
+The Abracadabra Money protocol uses a `Cauldron` architecture (borrowing logic) called via a `Degenbox` proxy.
+Complex operations are orchestrated through the versatile `cook()` function, which executes a sequence of encoded actions (actions[], values[], datas[]) in a single call.
 
 Each action corresponds to an internal operation:
 
@@ -16,17 +16,17 @@ Each action corresponds to an internal operation:
     5	ACTION_BORROW → MIM borrowing
     0	ACTION_CUSTOM / _additionalCookAction() → additional "custom" action
 
-ACTION_BORROW (5) sets status.needsSolvencyCheck = true, to force the solvency check at the end.
+ACTION_BORROW (5) sets `status.needsSolvencyCheck = true`, to force the solvency check at the end.
 
-But action 0 (ACTION_CUSTOM) calls _additionalCookAction(), an empty function that returns a new status structure where all fields are reset to false
+But action 0 (ACTION_CUSTOM) calls `_additionalCookAction()`, an empty function that returns a new status structure where all fields are reset to false
 
     function _additionalCookAction(CookStatus memory, bytes memory) internal pure returns (CookStatus memory) {
         return CookStatus(false);
     }
 
-As a result, the needsSolvencyCheck flag is cleared after a borrow.
+As a result, the `needsSolvencyCheck` flag is cleared after a borrow.
 
-At the end of cook(), the contract checks:
+At the end of `cook()`, the contract checks:
 
     if (status.needsSolvencyCheck) _ensureSolvent(user);
 
@@ -37,10 +37,10 @@ The attacker exploited this flaw by calling:
     actions = [5, 0]
     datas = [ encodeBorrowParams(amount, attacker), "" ]
 
-ACTION_BORROW → borrows a large amount of MIM.
-ACTION_0 → calls the empty _additionalCookAction() function → clears the flag.
-End of cook() → no check → the attacker keeps the borrowed MIM.
-They repeated this sequence on 6 different cauldrons, each executing a massive borrow.
+`ACTION_BORROW` → borrows a large amount of MIM.
+`ACTION_0` → calls the empty _additionalCookAction() function → clears the flag.
+End of `cook()` → no check → the attacker keeps the borrowed MIM.
+They repeated this sequence on `6 different cauldrons`, each executing a massive borrow.
 
     Stolen tokens: ≈ 1,793,755 MIM (~$1.79M)
     Main attacker: 0x1AaaDe3e9062d124B7DeB0eD6DDC7055EFA7354d
