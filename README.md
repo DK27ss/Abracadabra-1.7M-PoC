@@ -1,4 +1,7 @@
 # Abracadabra-1.7M-PoC
+
+<img width="161" height="51" alt="blockraider" src="https://github.com/user-attachments/assets/dc86222a-b5fb-49e8-9a9d-350973b7521d" />
+
 Abracadabra Protocol exploit PoC - [Rekt](https://rekt.news/fr/abracadabra-rekt3)
 
 Abracadabra, a DeFi lending protocol which also issues the decentralized Magic Internet Money (MIM) stablecoin, lost nearly $1.8 million worth of MIM after an attacker exploited a flaw in one of the protocol's functions. 
