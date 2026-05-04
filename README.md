@@ -65,7 +65,7 @@ They repeated this sequence on `6 different cauldrons`, each executing a massive
 
 ---
 
->|---|---|---|
+>
 >Company : https://blockraider.xyz/
 >
 >Community : https://discord.gg/Vqqt7jyRr7
